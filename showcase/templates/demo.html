@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<!-- Inline CSS for custom styling and drag & drop area -->
+<style>
+  /* Drag & Drop Zone Styling */
+  .drop-zone {
+      border: 2px dashed #ccc;
+      border-radius: 10px;
+      padding: 2rem;
+      text-align: center;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      margin-bottom: 1.5rem;
+  }
+  .drop-zone.dragover {
+      background-color: rgba(255, 20, 147, 0.1);
+  }
+  .drop-zone .drop-zone-text {
+      font-size: 1rem;
+      color: #cccccc;
+  }
+  
+  /* Browse button styling if needed (not used directly in drag zone) */
+  .btn-browse {
+      display: inline-block;
+      padding: 0.5rem 1.5rem;
+      background: #ffffff;
+      color: #1c1c1c;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.3s ease;
+  }
+  .btn-browse:hover {
+      background: #f0f0f0;
+  }
+  
+  /* Predict button styling: Diagonal gradient with purple and dark pink, glowing effect */
+  .btn-predict {
+      background: linear-gradient(45deg, #6a0dad, #ff1493);
+      color: #ffffff;
+      border: none;
+      border-radius: 50px;
+      padding: 0.8rem 2rem;
+      cursor: pointer;
+      font-weight: 600;
+      box-shadow: 0 0 10px rgba(106, 13, 173, 0.5), 0 0 20px rgba(255, 20, 147, 0.5);
+      transition: box-shadow 0.3s ease;
+      margin-top: 1rem; /* Adds vertical spacing */
+  }
+  .btn-predict:hover {
+      box-shadow: 0 0 15px rgba(106, 13, 173, 0.7), 0 0 30px rgba(255, 20, 147, 0.7);
+  }
+  
+  /* Loading spinner styling */
+  .spinner {
+      display: none;
+      margin-top: 1rem;
+  }
+  .spinner i {
+      font-size: 2rem;
+      color: #ff1493;
+      animation: spin 1s linear infinite;
+  }
+  @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+  }
+  
+  /* File name display styling */
+  .file-name {
+      display: block;
+      margin-top: 0.5rem;
+      font-size: 1rem;
+      color: #cccccc;
+  }
+</style>
+
+<div class="demo-container" style="text-align: center; margin: 6rem 0;">
+  <h2 style="margin-bottom: 2rem;">Upload Your Image for Prediction</h2>
+  <form method="post" enctype="multipart/form-data" style="display: inline-block;" id="predict-form">
+    {% csrf_token %}
+    <!-- Drag & Drop Area -->
+    <div class="drop-zone" id="drop-zone">
+      <span class="drop-zone-text">Drag & Drop your image here, or click to browse</span>
+      <!-- Hidden file input -->
+      <input type="file" name="image" id="id_image" style="display: none;">
+    </div>
+    <!-- Display the selected file name -->
+    <span id="file-name" class="file-name"></span>
+    <div>
+      <button type="submit" class="btn-predict">Predict</button>
+    </div>
+    <!-- Loading spinner -->
+    <div id="loading" class="spinner">
+      <i class="fa-solid fa-spinner fa-spin"></i>
+    </div>
+    {% if prediction %}
+      <div style="margin-top: 2rem; font-size: 1.2rem;">
+        <strong>Prediction:</strong> {{ prediction }}
+      </div>
+    {% endif %}
+  </form>
+</div>
+
+<script>
+  // Update file name display when a file is selected
+  const fileInput = document.getElementById("id_image");
+  const fileNameSpan = document.getElementById("file-name");
+  fileInput.addEventListener("change", function(){
+      if (this.files && this.files.length > 0) {
+          fileNameSpan.textContent = this.files[0].name;
+      } else {
+          fileNameSpan.textContent = "";
+      }
+  });
+  
+  // Drag & Drop functionality
+  const dropZone = document.getElementById("drop-zone");
+  
+  // When clicking the drop zone, open the file selector
+  dropZone.addEventListener("click", function() {
+      fileInput.click();
+  });
+  
+  // Highlight the drop zone when dragging a file over it
+  dropZone.addEventListener("dragover", function(e) {
+      e.preventDefault();
+      dropZone.classList.add("dragover");
+  });
+  
+  dropZone.addEventListener("dragleave", function(e) {
+      e.preventDefault();
+      dropZone.classList.remove("dragover");
+  });
+  
+  // Handle file drop
+  dropZone.addEventListener("drop", function(e) {
+      e.preventDefault();
+      dropZone.classList.remove("dragover");
+      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+          // Set the dropped files to the file input
+          fileInput.files = e.dataTransfer.files;
+          // Trigger change event to update file name display
+          const event = new Event('change');
+          fileInput.dispatchEvent(event);
+          e.dataTransfer.clearData();
+      }
+  });
+  
+  // When the form is submitted, hide the Predict button and show the loading spinner.
+  document.getElementById("predict-form").addEventListener("submit", function() {
+      const predictBtn = document.querySelector(".btn-predict");
+      if (predictBtn) {
+          predictBtn.style.display = "none";
+      }
+      const loadingSpinner = document.getElementById("loading");
+      if (loadingSpinner) {
+          loadingSpinner.style.display = "block";
+      }
+  });
+</script>
+{% endblock %}
